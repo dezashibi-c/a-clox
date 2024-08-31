@@ -20,11 +20,11 @@ I've made some changes, in namings, files, etc. I've also added array support as
 
 ## CMake Configuration Options
 
-- ENABLE_NAN_BOXING -> `ON` by default
-- ENABLE_DEBUG_PRINT_CODE -> `OFF` by default
-- ENABLE_DEBUG_TRACE_EXECUTION -> `OFF` by default
-- ENABLE_DEBUG_STRESS_GC -> `ON` by default
-- ENABLE_DEBUG_LOG_GC -> `OFF` by default
+- `ENABLE_NAN_BOXING` -> `ON` by default
+- `ENABLE_DEBUG_PRINT_CODE` -> `OFF` by default
+- `ENABLE_DEBUG_TRACE_EXECUTION` -> `OFF` by default
+- `ENABLE_DEBUG_STRESS_GC` -> `ON` by default
+- `ENABLE_DEBUG_LOG_GC` -> `OFF` by default
 
 ## License
 
