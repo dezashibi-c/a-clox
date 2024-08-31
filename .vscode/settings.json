@@ -7,6 +7,7 @@
         "CLOX",
         "GETIDX",
         "SETIDX",
+        "sweeped",
         "UPVALUE",
         "upvalues"
     ]
