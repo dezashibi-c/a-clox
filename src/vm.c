@@ -361,9 +361,9 @@ static InterpretResult run()
 {
     CallFrame* frame = &vm.frames[vm.frame_count - 1];
 
-#define byte_read_raw() (*frame->ip++)
+#define byte_read() (*frame->ip++)
 #define byte_read_constant()                                                   \
-    (frame->closure->function->chunk.constants.values[byte_read_raw()])
+    (frame->closure->function->chunk.constants.values[byte_read()])
 
 #define byte_read_short()                                                      \
     (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
@@ -401,7 +401,7 @@ static InterpretResult run()
             (int)(frame->ip - frame->closure->function->chunk.code));
 #endif
         uint8_t instruction;
-        switch (instruction = byte_read_raw())
+        switch (instruction = byte_read())
         {
             case OP_CONSTANT:
             {
@@ -428,14 +428,14 @@ static InterpretResult run()
 
             case OP_GET_LOCAL:
             {
-                uint8_t slot = byte_read_raw();
+                uint8_t slot = byte_read();
                 vm_stack_push(frame->slots[slot]);
                 break;
             }
 
             case OP_SET_LOCAL:
             {
-                uint8_t slot = byte_read_raw();
+                uint8_t slot = byte_read();
                 frame->slots[slot] = vm_stack_peek(0);
                 break;
             }
@@ -482,14 +482,14 @@ static InterpretResult run()
 
             case OP_GET_UPVALUE:
             {
-                uint8_t slot = byte_read_raw();
+                uint8_t slot = byte_read();
                 vm_stack_push(*frame->closure->upvalues[slot]->location);
                 break;
             }
 
             case OP_SET_UPVALUE:
             {
-                uint8_t slot = byte_read_raw();
+                uint8_t slot = byte_read();
                 *frame->closure->upvalues[slot]->location = vm_stack_peek(0);
                 break;
             }
@@ -652,7 +652,7 @@ static InterpretResult run()
 
             case OP_CALL:
             {
-                int argc = byte_read_raw();
+                int argc = byte_read();
                 if (!value_call(vm_stack_peek(argc), argc))
                     return INTERPRET_RUNTIME_ERROR;
 
@@ -663,7 +663,7 @@ static InterpretResult run()
             case OP_INVOKE:
             {
                 ObjString* method = byte_read_string();
-                int argc = byte_read_raw();
+                int argc = byte_read();
 
                 if (!invoke(method, argc)) return INTERPRET_RUNTIME_ERROR;
 
@@ -674,7 +674,7 @@ static InterpretResult run()
             case OP_SUPER_INVOKE:
             {
                 ObjString* method = byte_read_string();
-                int argc = byte_read_raw();
+                int argc = byte_read();
                 ObjClass* superclass = obj_as_class(vm_stack_pop());
                 if (!invoke_from_class(superclass, method, argc))
                     return INTERPRET_RUNTIME_ERROR;
@@ -691,8 +691,8 @@ static InterpretResult run()
 
                 for (int i = 0; i < closure->upvalue_count; ++i)
                 {
-                    uint8_t is_local = byte_read_raw();
-                    uint8_t index = byte_read_raw();
+                    uint8_t is_local = byte_read();
+                    uint8_t index = byte_read();
 
                     if (is_local)
                     {
@@ -717,7 +717,7 @@ static InterpretResult run()
             {
                 // Stack before: [item1, item2, ..., itemN] and after: [list]
                 ObjList* list = obj_list_new();
-                uint8_t item_count = byte_read_raw();
+                uint8_t item_count = byte_read();
 
                 // So list isn't sweeped by GC in obj_list_append
                 vm_stack_push(value_make_obj(list));
@@ -842,7 +842,7 @@ static InterpretResult run()
         }
     }
 
-#undef byte_read_raw
+#undef byte_read
 #undef byte_read_short
 #undef byte_read_constant
 #undef byte_read_string
