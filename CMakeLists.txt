@@ -29,6 +29,33 @@ add_executable(clox
     src/table.c
 )
 
+option(ENABLE_NAN_BOXING "Enable NAN_BOXING" ON)
+option(ENABLE_DEBUG_PRINT_CODE "Enable DEBUG_PRINT_CODE" OFF)
+option(ENABLE_DEBUG_TRACE_EXECUTION "Enable DEBUG_TRACE_EXECUTION" OFF)
+option(ENABLE_DEBUG_STRESS_GC "Enable DEBUG_STRESS_GC" ON)
+option(ENABLE_DEBUG_LOG_GC "Enable DEBUG_LOG_GC" OFF)
+
+if(ENABLE_NAN_BOXING)
+    target_compile_definitions(clox PRIVATE NAN_BOXING)
+endif()
+
+if(ENABLE_DEBUG_PRINT_CODE)
+    target_compile_definitions(clox PRIVATE DEBUG_PRINT_CODE)
+endif()
+
+if(ENABLE_DEBUG_TRACE_EXECUTION)
+    target_compile_definitions(clox PRIVATE DEBUG_TRACE_EXECUTION)
+endif()
+
+if(ENABLE_DEBUG_STRESS_GC)
+    target_compile_definitions(clox PRIVATE DEBUG_STRESS_GC)
+endif()
+
+if(ENABLE_DEBUG_LOG_GC)
+    target_compile_definitions(clox PRIVATE DEBUG_LOG_GC)
+endif()
+
+
 ###############################################################################
 # PRE BUILD TESTS
 ###############################################################################
