@@ -80,10 +80,19 @@ static void gc_blacken_obj(Obj* object)
 
     switch (object->type)
     {
+        case OBJ_BOUND_METHOD:
+        {
+            ObjBoundMethod* bound = (ObjBoundMethod*)object;
+            gc_mark_value(bound->receiver);
+            gc_mark_obj((Obj*)bound->method);
+            break;
+        }
+
         case OBJ_CLASS:
         {
             ObjClass* cls = (ObjClass*)object;
             gc_mark_obj((Obj*)cls->name);
+            gc_mark_table(&cls->methods);
             break;
         }
 
@@ -139,8 +148,14 @@ static void object_free(Obj* object)
 
     switch (object->type)
     {
+        case OBJ_BOUND_METHOD:
+            mem_free(ObjBoundMethod, object);
+            break;
+
         case OBJ_CLASS:
         {
+            ObjClass* cls = (ObjClass*)object;
+            table_free(&cls->methods);
             mem_free(ObjClass, object);
             break;
         }

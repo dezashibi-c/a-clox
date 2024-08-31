@@ -9,6 +9,7 @@
 #define obj_get_type(value) (value_as_obj(value)->type)
 
 #define obj_is_list(value) (is_object_of_type(value, OBJ_LIST))
+#define obj_is_bound_method(value) (is_object_of_type(value, OBJ_BOUND_METHOD))
 #define obj_is_class(value) (is_object_of_type(value, OBJ_CLASS))
 #define obj_is_instance(value) (is_object_of_type(value, OBJ_INSTANCE))
 #define obj_is_closure(value) (is_object_of_type(value, OBJ_CLOSURE))
@@ -17,6 +18,7 @@
 #define obj_is_string(value) (is_object_of_type(value, OBJ_STRING))
 
 #define obj_as_list(value) ((ObjList*)value_as_obj(value))
+#define obj_as_bound_method(value) ((ObjBoundMethod*)value_as_obj(value))
 #define obj_as_class(value) ((ObjClass*)value_as_obj(value))
 #define obj_as_instance(value) ((ObjInstance*)value_as_obj(value))
 #define obj_as_closure(value) ((ObjClosure*)value_as_obj(value))
@@ -28,6 +30,7 @@
 typedef enum
 {
     OBJ_LIST,
+    OBJ_BOUND_METHOD,
     OBJ_CLASS,
     OBJ_CLOSURE,
     OBJ_FUNCTION,
@@ -97,6 +100,7 @@ typedef struct
 {
     Obj obj;
     ObjString* name;
+    Table methods;
 } ObjClass;
 
 typedef struct
@@ -106,6 +110,13 @@ typedef struct
     Table fields;
 } ObjInstance;
 
+typedef struct
+{
+    Obj obj;
+    Value receiver;
+    ObjClosure* method;
+} ObjBoundMethod;
+
 ObjList* obj_list_new();
 void obj_list_append(ObjList* list, Value value);
 void obj_list_insert(ObjList* list, int index, Value value);
@@ -113,6 +124,7 @@ Value obj_list_get(ObjList* list, int index);
 void obj_list_delete(ObjList* list, int index);
 bool obj_list_is_valid_index(ObjList* list, int index);
 
+ObjBoundMethod* obj_bound_method_new(Value receiver, ObjClosure* method);
 ObjClass* obj_class_new(ObjString* name);
 ObjInstance* obj_instance_new(ObjClass* cls);
 

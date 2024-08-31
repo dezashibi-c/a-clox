@@ -137,6 +137,7 @@ static void parse_expression();
 static uint8_t parse_variable(const char* error_message);
 static uint8_t parse_argument_list();
 static void parse_fun_declaration();
+static void parse_class_method();
 static void parse_class_declaration();
 static void parse_var_declaration();
 static void parse_declaration();
@@ -864,17 +865,33 @@ static void parse_fun_declaration()
     byte_emit_var_def(global);
 }
 
+static void parse_class_method()
+{
+    expect_token_or_fail(TOKEN_IDENTIFIER, "Expect method name.");
+    uint8_t constant = constant_identifier(&parser.previous);
+
+    parse_function(CP_FUNCTION_BODY);
+    byte_emit_duo(OP_METHOD, constant);
+}
+
 static void parse_class_declaration()
 {
     expect_token_or_fail(TOKEN_IDENTIFIER, "Expect class name.");
+    Token class_name = parser.previous;
     uint8_t name_constant = constant_identifier(&parser.previous);
     compiler_declare_variable();
 
     byte_emit_duo(OP_CLASS, name_constant);
     byte_emit_var_def(name_constant);
 
+    byte_emit_named_variable(class_name, false);
     expect_token_or_fail(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+
+    while (!current_token_is(TOKEN_RIGHT_BRACE) && !current_token_is(TOKEN_EOF))
+        parse_class_method();
+
     expect_token_or_fail(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+    byte_emit(OP_POP);
 }
 
 static void parse_var_declaration()

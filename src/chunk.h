@@ -41,6 +41,7 @@ typedef enum
     OP_LIST_SETIDX,
     OP_RETURN,
     OP_CLASS,
+    OP_METHOD,
 } OpCode;
 
 typedef struct

@@ -188,6 +188,12 @@ static bool value_call(Value callee, int argc)
     {
         switch (obj_get_type(callee))
         {
+            case OBJ_BOUND_METHOD:
+            {
+                ObjBoundMethod* bound = obj_as_bound_method(callee);
+                return obj_func_call(bound->method, argc);
+            }
+
             case OBJ_CLASS:
             {
                 ObjClass* cls = obj_as_class(callee);
@@ -252,6 +258,32 @@ static void upvalue_close_until(Value* last)
         upvalue->location = &upvalue->closed;
         vm.open_upvalues = upvalue->next;
     }
+}
+
+static void define_method(ObjString* name)
+{
+    Value method = vm_stack_peek(0);
+    ObjClass* cls = obj_as_class(vm_stack_peek(1));
+    table_set(&cls->methods, name, method);
+    vm_stack_pop();
+}
+
+static bool bind_method(ObjClass* cls, ObjString* name)
+{
+    Value method;
+    if (!table_get(&cls->methods, name, &method))
+    {
+        raise_runtime_error("Undefined property '%s'.", name->chars);
+        return false;
+    }
+
+    ObjBoundMethod* bound =
+        obj_bound_method_new(vm_stack_peek(0), obj_as_closure(method));
+
+    vm_stack_pop();
+    vm_stack_push(value_make_obj(bound));
+
+    return true;
 }
 
 static void string_concat()
@@ -428,8 +460,12 @@ static InterpretResult run()
                     break;
                 }
 
-                raise_runtime_error("Undefined property '%s'.", name->chars);
-                return INTERPRET_RUNTIME_ERROR;
+                if (!bind_method(instance->cls, name))
+                {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                break;
             }
 
             case OP_SET_PROPERTY:
@@ -692,6 +728,10 @@ static InterpretResult run()
             case OP_CLASS:
                 vm_stack_push(
                     value_make_obj(obj_class_new(byte_read_string())));
+                break;
+
+            case OP_METHOD:
+                define_method(byte_read_string());
                 break;
         }
     }

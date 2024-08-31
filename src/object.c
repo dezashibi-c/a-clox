@@ -74,10 +74,21 @@ bool obj_list_is_valid_index(ObjList* list, int index)
     return (index >= 0 && index < list->count);
 }
 
+ObjBoundMethod* obj_bound_method_new(Value receiver, ObjClosure* method)
+{
+    ObjBoundMethod* bound = obj_mem_alloc(ObjBoundMethod, OBJ_BOUND_METHOD);
+
+    bound->receiver = receiver;
+    bound->method = method;
+
+    return bound;
+}
+
 ObjClass* obj_class_new(ObjString* name)
 {
     ObjClass* cls = obj_mem_alloc(ObjClass, OBJ_CLASS);
     cls->name = name;
+    table_init(&cls->methods);
 
     return cls;
 }
@@ -218,6 +229,10 @@ void obj_print(Value value)
 {
     switch (obj_get_type(value))
     {
+        case OBJ_BOUND_METHOD:
+            function_print(obj_as_bound_method(value)->method->function);
+            break;
+
         case OBJ_CLASS:
             printf("%s", obj_as_class(value)->name->chars);
             break;
