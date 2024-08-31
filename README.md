@@ -1,6 +1,8 @@
 # CLox Compiler
 
-This is a beginner friendly `cmake` for `C` projects. while it's not by all means the **"best"** approach but it's clearly crafted together and commented for you to be able to adjust it to your needs.
+This is a follow up/re-implementation of `clox` programming language from [Crafting Interpreters Book](https://craftinginterpreters.com/a-bytecode-virtual-machine.html).
+
+I've made some changes, in namings, files, etc. I've also added array support as well.
 
 ## Structure
 
