@@ -7,6 +7,12 @@
 
 bool value_check_equality(Value a, Value b)
 {
+#ifdef NAN_BOXING
+    if (value_is_number(a) && value_is_number(b))
+        return value_as_number(a) == value_as_number(b);
+
+    return a == b;
+#else
     if (a.type != b.type) return false;
 
     switch (a.type)
@@ -26,6 +32,7 @@ bool value_check_equality(Value a, Value b)
         default:
             return false; // Unreachable.
     }
+#endif
 }
 
 void value_array_init(ValueArray* array)
@@ -57,6 +64,25 @@ void value_array_free(ValueArray* array)
 
 void value_print(Value value)
 {
+#ifdef NAN_BOXING
+    if (value_is_bool(value))
+    {
+        printf(value_as_bool(value) ? "true" : "false");
+    }
+    else if (value_is_nil(value))
+    {
+        printf("nil");
+    }
+    else if (value_is_number(value))
+    {
+        printf("%g", value_as_number(value));
+    }
+    else if (value_is_obj(value))
+    {
+        obj_print(value);
+    }
+#else
+
     switch (value.type)
     {
         case VAL_BOOL:
@@ -75,4 +101,5 @@ void value_print(Value value)
             obj_print(value);
             break;
     }
+#endif
 }
