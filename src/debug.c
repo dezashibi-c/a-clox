@@ -99,6 +99,12 @@ int instruction_disassemble(Chunk* chunk, int offset)
         case OP_SET_UPVALUE:
             return instruction_byte("OP_SET_UPVALUE", chunk, offset);
 
+        case OP_GET_PROPERTY:
+            return instruction_constant("OP_GET_PROPERTY", chunk, offset);
+
+        case OP_SET_PROPERTY:
+            return instruction_constant("OP_SET_PROPERTY", chunk, offset);
+
         case OP_EQUAL:
             return instruction_simple("OP_EQUAL", offset);
 

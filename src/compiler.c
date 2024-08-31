@@ -128,6 +128,7 @@ static void parse_number(bool can_assign);
 static void parse_string(bool can_assign);
 static void parse_literal(bool can_assign);
 static void parse_call(bool can_assign);
+static void parse_dot(bool can_assign);
 static void parse_list(bool can_assign);
 static void parse_subscript(bool can_assign);
 
@@ -163,7 +164,7 @@ ParseRule rules[] = {
     [TOKEN_LEFT_BRACKET] = {parse_list, parse_subscript, PREC_SUBSCRIPT},
     [TOKEN_RIGHT_BRACKET] = {NULL, NULL, PREC_NONE},
     [TOKEN_COMMA] = {NULL, NULL, PREC_NONE},
-    [TOKEN_DOT] = {NULL, NULL, PREC_NONE},
+    [TOKEN_DOT] = {NULL, parse_dot, PREC_CALL},
     [TOKEN_MINUS] = {parse_unary, parse_binary, PREC_TERM},
     [TOKEN_PLUS] = {NULL, parse_binary, PREC_TERM},
     [TOKEN_SEMICOLON] = {NULL, NULL, PREC_NONE},
@@ -756,6 +757,22 @@ static void parse_call(bool can_assign)
 
     uint8_t argc = parse_argument_list();
     byte_emit_duo(OP_CALL, argc);
+}
+
+static void parse_dot(bool can_assign)
+{
+    expect_token_or_fail(TOKEN_IDENTIFIER, "Expect property name after '.'.");
+    uint8_t name = constant_identifier(&parser.previous);
+
+    if (can_assign && expect_token(TOKEN_EQUAL))
+    {
+        parse_expression();
+        byte_emit_duo(OP_SET_PROPERTY, name);
+    }
+    else
+    {
+        byte_emit_duo(OP_GET_PROPERTY, name);
+    }
 }
 
 static void parse_list(bool can_assign)

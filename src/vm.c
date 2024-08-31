@@ -409,6 +409,47 @@ static InterpretResult run()
                 break;
             }
 
+            case OP_GET_PROPERTY:
+            {
+                if (!obj_is_instance(vm_stack_peek(0)))
+                {
+                    raise_runtime_error("Only instances have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjInstance* instance = obj_as_instance(vm_stack_peek(0));
+                ObjString* name = byte_read_string();
+
+                Value value;
+                if (table_get(&instance->fields, name, &value))
+                {
+                    vm_stack_pop(); // Instance
+                    vm_stack_push(value);
+                    break;
+                }
+
+                raise_runtime_error("Undefined property '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+
+            case OP_SET_PROPERTY:
+            {
+                if (!obj_is_instance(vm_stack_peek(1)))
+                {
+                    raise_runtime_error("Only instances have fields.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjInstance* instance = obj_as_instance(vm_stack_peek(1));
+                table_set(&instance->fields, byte_read_string(),
+                          vm_stack_peek(0));
+
+                Value value = vm_stack_pop();
+                vm_stack_pop();
+                vm_stack_push(value);
+                break;
+            }
+
             case OP_EQUAL:
             {
                 Value b = vm_stack_pop();
