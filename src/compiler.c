@@ -136,6 +136,7 @@ static void parse_expression();
 static uint8_t parse_variable(const char* error_message);
 static uint8_t parse_argument_list();
 static void parse_fun_declaration();
+static void parse_class_declaration();
 static void parse_var_declaration();
 static void parse_declaration();
 
@@ -846,6 +847,19 @@ static void parse_fun_declaration()
     byte_emit_var_def(global);
 }
 
+static void parse_class_declaration()
+{
+    expect_token_or_fail(TOKEN_IDENTIFIER, "Expect class name.");
+    uint8_t name_constant = constant_identifier(&parser.previous);
+    compiler_declare_variable();
+
+    byte_emit_duo(OP_CLASS, name_constant);
+    byte_emit_var_def(name_constant);
+
+    expect_token_or_fail(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+    expect_token_or_fail(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+}
+
 static void parse_var_declaration()
 {
     uint8_t global = parse_variable("Expect variable name.");
@@ -867,7 +881,11 @@ static void parse_var_declaration()
 
 static void parse_declaration()
 {
-    if (expect_token(TOKEN_FUN))
+    if (expect_token(TOKEN_CLASS))
+    {
+        parse_class_declaration();
+    }
+    else if (expect_token(TOKEN_FUN))
     {
         parse_fun_declaration();
     }

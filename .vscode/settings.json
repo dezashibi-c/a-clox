@@ -5,6 +5,8 @@
     },
     "cSpell.words": [
         "CLOX",
+        "GETIDX",
+        "SETIDX",
         "UPVALUE",
         "upvalues"
     ]

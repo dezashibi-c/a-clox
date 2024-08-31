@@ -640,6 +640,11 @@ static InterpretResult run()
                 frame = &vm.frames[vm.frame_count - 1];
                 break;
             }
+
+            case OP_CLASS:
+                vm_stack_push(
+                    value_make_obj(obj_class_new(byte_read_string())));
+                break;
         }
     }
 
