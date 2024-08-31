@@ -130,6 +130,9 @@ void vm_init()
     table_init(&vm.globals);
     table_init(&vm.strings);
 
+    vm.init_str = NULL;
+    vm.init_str = obj_string_cpy("init", 4);
+
     vm_define_native_fn("clock", native_fn_clock);
     vm_define_native_fn("append", native_fn_list_append);
     vm_define_native_fn("delete", native_fn_list_delete);
@@ -139,6 +142,8 @@ void vm_free()
 {
     table_free(&vm.globals);
     table_free(&vm.strings);
+
+    vm.init_str = NULL;
 
     objects_free();
 }
@@ -191,6 +196,7 @@ static bool value_call(Value callee, int argc)
             case OBJ_BOUND_METHOD:
             {
                 ObjBoundMethod* bound = obj_as_bound_method(callee);
+                vm.stack_top[-argc - 1] = bound->receiver;
                 return obj_func_call(bound->method, argc);
             }
 
@@ -198,6 +204,19 @@ static bool value_call(Value callee, int argc)
             {
                 ObjClass* cls = obj_as_class(callee);
                 vm.stack_top[-argc - 1] = value_make_obj(obj_instance_new(cls));
+
+                Value initializer;
+                if (table_get(&cls->methods, vm.init_str, &initializer))
+                {
+                    return obj_func_call(obj_as_closure(initializer), argc);
+                }
+                else if (argc != 0)
+                {
+                    raise_runtime_error("Expected 0 argument but got %d.",
+                                        argc);
+                    return false;
+                }
+
                 return true;
             }
 
@@ -220,6 +239,40 @@ static bool value_call(Value callee, int argc)
 
     raise_runtime_error("Can only call functions and classes.");
     return false;
+}
+
+static bool invoke_from_class(ObjClass* cls, ObjString* name, int argc)
+{
+    Value method;
+    if (!table_get(&cls->methods, name, &method))
+    {
+        raise_runtime_error("Undefined property '%s'.", name->chars);
+        return false;
+    }
+
+    return obj_func_call(obj_as_closure(method), argc);
+}
+
+static bool invoke(ObjString* name, int argc)
+{
+    Value receiver = vm_stack_peek(argc);
+
+    if (!obj_is_instance(receiver))
+    {
+        raise_runtime_error("Only instances have methods.");
+        return false;
+    }
+
+    ObjInstance* instance = obj_as_instance(receiver);
+
+    Value value;
+    if (table_get(&instance->fields, name, &value))
+    {
+        vm.stack_top[-argc - 1] = value;
+        return value_call(value, argc);
+    }
+
+    return invoke_from_class(instance->cls, name, argc);
 }
 
 static ObjUpValue* upvalue_capture(Value* local)
@@ -589,6 +642,17 @@ static InterpretResult run()
                 int argc = byte_read_raw();
                 if (!value_call(vm_stack_peek(argc), argc))
                     return INTERPRET_RUNTIME_ERROR;
+
+                frame = &vm.frames[vm.frame_count - 1];
+                break;
+            }
+
+            case OP_INVOKE:
+            {
+                ObjString* method = byte_read_string();
+                int argc = byte_read_raw();
+
+                if (!invoke(method, argc)) return INTERPRET_RUNTIME_ERROR;
 
                 frame = &vm.frames[vm.frame_count - 1];
                 break;

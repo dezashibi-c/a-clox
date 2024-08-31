@@ -225,6 +225,8 @@ static void gc_mark_roots()
     gc_mark_table(&vm.globals);
 
     gc_mark_compiler_roots();
+
+    gc_mark_obj((Obj*)vm.init_str);
 }
 
 static void gc_trace_refs()

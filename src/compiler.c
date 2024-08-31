@@ -59,8 +59,10 @@ typedef struct
 
 typedef enum
 {
-    CP_FUNCTION_BODY,
-    CP_MAIN_BODY,
+    CP_FUNCTION,
+    CP_INITIALIZER,
+    CP_METHOD,
+    CP_MAIN_SCRIPT,
 } CodePlacement;
 
 typedef struct Compiler
@@ -75,9 +77,14 @@ typedef struct Compiler
     int scope_depth;
 } Compiler;
 
+typedef struct ClassCompiler
+{
+    struct ClassCompiler* enclosing;
+} ClassCompiler;
+
 Parser parser;
 Compiler* current_compiler = NULL;
-Chunk* compiling_chunk;
+ClassCompiler* current_class = NULL;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // STATIC FUNCTIONS DECLARATIONS, MACROS AND PARSER RULES
@@ -95,7 +102,7 @@ static int compiler_upvalue_add(Compiler* compiler, uint8_t index,
 static int compiler_local_resolve(Compiler* compiler, Token* name);
 static int compiler_upvalue_resolve(Compiler* compiler, Token* name);
 static void compiler_local_mark_initialized();
-static void compiler_declare_variable();
+static void compiler_define_variable();
 
 static void raise_error_at(Token* token, const char* message);
 static void raise_error(const char* message);
@@ -129,6 +136,7 @@ static void parse_string(bool can_assign);
 static void parse_literal(bool can_assign);
 static void parse_call(bool can_assign);
 static void parse_dot(bool can_assign);
+static void parse_this(bool can_assign);
 static void parse_list(bool can_assign);
 static void parse_subscript(bool can_assign);
 
@@ -194,7 +202,7 @@ ParseRule rules[] = {
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
-    [TOKEN_THIS] = {NULL, NULL, PREC_NONE},
+    [TOKEN_THIS] = {parse_this, NULL, PREC_NONE},
     [TOKEN_TRUE] = {parse_literal, NULL, PREC_NONE},
     [TOKEN_VAR] = {NULL, NULL, PREC_NONE},
     [TOKEN_WHILE] = {NULL, NULL, PREC_NONE},
@@ -221,7 +229,7 @@ static void compiler_init(Compiler* compiler, CodePlacement code_placement)
     compiler->function = obj_function_new();
     current_compiler = compiler;
 
-    if (code_placement != CP_MAIN_BODY)
+    if (code_placement != CP_MAIN_SCRIPT)
     {
         current_compiler->function->name =
             obj_string_cpy(parser.previous.start, parser.previous.length);
@@ -229,9 +237,18 @@ static void compiler_init(Compiler* compiler, CodePlacement code_placement)
 
     Local* local = &current_compiler->locals[current_compiler->local_count++];
     local->depth = 0;
-    local->name.start = "";
     local->is_captured = false;
-    local->name.length = 0;
+
+    if (code_placement != CP_FUNCTION)
+    {
+        local->name.start = "this";
+        local->name.length = 4;
+    }
+    else
+    {
+        local->name.start = "";
+        local->name.length = 0;
+    }
 }
 
 static void compiler_scope_begin()
@@ -345,7 +362,7 @@ static void compiler_local_mark_initialized()
         current_compiler->scope_depth;
 }
 
-static void compiler_declare_variable()
+static void compiler_define_variable()
 {
     if (current_compiler->scope_depth == 0) return;
 
@@ -586,7 +603,15 @@ static void byte_emit_loop(int loop_start)
 
 static void byte_emit_return()
 {
-    byte_emit(OP_NIL);
+    if (current_compiler->code_placement == CP_INITIALIZER)
+    {
+        byte_emit_duo(OP_GET_LOCAL, 0);
+    }
+    else
+    {
+        byte_emit(OP_NIL);
+    }
+
     byte_emit(OP_RETURN);
 }
 
@@ -770,10 +795,29 @@ static void parse_dot(bool can_assign)
         parse_expression();
         byte_emit_duo(OP_SET_PROPERTY, name);
     }
+    else if (expect_token(TOKEN_LEFT_PAREN))
+    {
+        uint8_t argc = parse_argument_list();
+        byte_emit_duo(OP_INVOKE, name);
+        byte_emit(argc);
+    }
     else
     {
         byte_emit_duo(OP_GET_PROPERTY, name);
     }
+}
+
+static void parse_this(bool can_assign)
+{
+    (void)can_assign;
+
+    if (current_class == NULL)
+    {
+        raise_error("Can't use 'this' outside of a class method.");
+        return;
+    }
+
+    byte_emit_variable(false);
 }
 
 static void parse_list(bool can_assign)
@@ -827,7 +871,7 @@ static uint8_t parse_variable(const char* error_message)
 {
     expect_token_or_fail(TOKEN_IDENTIFIER, error_message);
 
-    compiler_declare_variable();
+    compiler_define_variable();
     if (current_compiler->scope_depth > 0) return 0;
 
     return constant_identifier(&parser.previous);
@@ -861,7 +905,7 @@ static void parse_fun_declaration()
 {
     uint8_t global = parse_variable("Expect function name.");
     compiler_local_mark_initialized();
-    parse_function(CP_FUNCTION_BODY);
+    parse_function(CP_FUNCTION);
     byte_emit_var_def(global);
 }
 
@@ -870,7 +914,15 @@ static void parse_class_method()
     expect_token_or_fail(TOKEN_IDENTIFIER, "Expect method name.");
     uint8_t constant = constant_identifier(&parser.previous);
 
-    parse_function(CP_FUNCTION_BODY);
+    CodePlacement code_placement = CP_METHOD;
+
+    if (parser.previous.length == 4 &&
+        memcmp(parser.previous.start, "init", 4) == 0)
+    {
+        code_placement = CP_INITIALIZER;
+    }
+
+    parse_function(code_placement);
     byte_emit_duo(OP_METHOD, constant);
 }
 
@@ -879,10 +931,14 @@ static void parse_class_declaration()
     expect_token_or_fail(TOKEN_IDENTIFIER, "Expect class name.");
     Token class_name = parser.previous;
     uint8_t name_constant = constant_identifier(&parser.previous);
-    compiler_declare_variable();
+    compiler_define_variable();
 
     byte_emit_duo(OP_CLASS, name_constant);
     byte_emit_var_def(name_constant);
+
+    ClassCompiler class_compiler;
+    class_compiler.enclosing = current_class;
+    current_class = &class_compiler;
 
     byte_emit_named_variable(class_name, false);
     expect_token_or_fail(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
@@ -892,6 +948,8 @@ static void parse_class_declaration()
 
     expect_token_or_fail(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
     byte_emit(OP_POP);
+
+    current_class = current_class->enclosing;
 }
 
 static void parse_var_declaration()
@@ -996,7 +1054,7 @@ static void parse_if_statement()
 
 static void parse_return_statement()
 {
-    if (current_compiler->code_placement == CP_MAIN_BODY)
+    if (current_compiler->code_placement == CP_MAIN_SCRIPT)
     {
         raise_error("Can't return from top-level code.");
     }
@@ -1005,6 +1063,11 @@ static void parse_return_statement()
     {
         byte_emit_return();
         return;
+    }
+
+    if (current_compiler->code_placement == CP_INITIALIZER)
+    {
+        raise_error("Can't return a value from an initializer.");
     }
 
     parse_expression();
@@ -1213,7 +1276,7 @@ ObjFunction* compile(const char* source)
     scanner_init(source);
 
     Compiler compiler;
-    compiler_init(&compiler, CP_MAIN_BODY);
+    compiler_init(&compiler, CP_MAIN_SCRIPT);
 
     parser.had_error = false;
     parser.panic_mode = false;

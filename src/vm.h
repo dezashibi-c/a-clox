@@ -24,6 +24,7 @@ typedef struct
     Value* stack_top;
     Table globals;
     Table strings;
+    ObjString* init_str;
     ObjUpValue* open_upvalues;
 
     size_t bytes_allocated;

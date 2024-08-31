@@ -24,6 +24,17 @@ static int instruction_constant(const char* name, Chunk* chunk, int offset)
     return offset + 2;
 }
 
+static int instruction_invoke(const char* name, Chunk* chunk, int offset)
+{
+    uint8_t constant = chunk->code[offset + 1];
+    uint8_t argc = chunk->code[offset + 2];
+    printf("%-16s (%d args) %4d '", name, argc, constant);
+    value_print(chunk->constants.values[constant]);
+    puts("'");
+
+    return offset + 3;
+}
+
 static int instruction_simple(const char* name, int offset)
 {
     printf("%s\n", name);
@@ -146,6 +157,9 @@ int instruction_disassemble(Chunk* chunk, int offset)
 
         case OP_CALL:
             return instruction_byte("OP_CALL", chunk, offset);
+
+        case OP_INVOKE:
+            return instruction_invoke("OP_INVOKE", chunk, offset);
 
         case OP_CLOSURE:
         {
