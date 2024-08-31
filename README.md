@@ -18,6 +18,14 @@ I've made some changes, in namings, files, etc. I've also added array support as
 
 **👉 NOTE:** All the build artifacts will be placed in `out` folder, all the build artifacts for tests will be placed in `out_tests` folder.
 
+## CMake Configuration Options
+
+- ENABLE_NAN_BOXING -> `ON` by default
+- ENABLE_DEBUG_PRINT_CODE -> `OFF` by default
+- ENABLE_DEBUG_TRACE_EXECUTION -> `OFF` by default
+- ENABLE_DEBUG_STRESS_GC -> `ON` by default
+- ENABLE_DEBUG_LOG_GC -> `OFF` by default
+
 ## License
 
 Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
