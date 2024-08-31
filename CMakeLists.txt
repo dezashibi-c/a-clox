@@ -8,7 +8,7 @@ include(cmake/utils.cmake)
 ###############################################################################
 # PROJECT SETUP
 ###############################################################################
-project(SimpleCProject LANGUAGES C)
+project(CLoxCompiler LANGUAGES C)
 include_directories(include src extern)
 include(cmake/configs.cmake)
 add_subdirectory(tests)
@@ -16,13 +16,21 @@ add_subdirectory(tests)
 ###############################################################################
 # EXECUTABLE TARGETS
 ###############################################################################
-add_executable(main_exe_file 
+add_executable(clox
     src/main.c
-    src/math_utils.c
+    src/chunk.c
+    src/memory.c
+    src/debug.c
+    src/value.c
+    src/vm.c
+    src/compiler.c
+    src/scanner.c
+    src/object.c
+    src/table.c
 )
 
 ###############################################################################
 # PRE BUILD TESTS
 ###############################################################################
 
-enable_pre_build_testing(main_exe_file all_tests)
+# enable_pre_build_testing(main_exe_file all_tests)

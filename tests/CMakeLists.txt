@@ -21,4 +21,4 @@ add_custom_target(all_tests)
 # are not any like `add_clove_test(test_something "" "")`
 ###############################################################################
 
-add_clove_test(test_math_utils "" "../src/math_utils.c")
+# add_clove_test(test_math_utils "" "../src/math_utils.c")
