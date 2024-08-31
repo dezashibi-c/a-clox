@@ -996,14 +996,14 @@ static void parse_class_declaration()
             raise_error("A class can't inherit from itself.");
         }
 
+        compiler_scope_begin();
+        compiler_local_add(token_make_synthetic("super"));
+        byte_emit_var_def(0);
+
         byte_emit_named_variable(class_name, false);
         byte_emit(OP_INHERIT);
         class_compiler.has_super_class = true;
     }
-
-    compiler_scope_begin();
-    compiler_local_add(token_make_synthetic("super"));
-    byte_emit_var_def(0);
 
     byte_emit_named_variable(class_name, false);
     expect_token_or_fail(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
