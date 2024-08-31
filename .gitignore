@@ -1,0 +1,6 @@
+build
+out
+out_tests
+.cache
+.kdev4
+*.kdev4

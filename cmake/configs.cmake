@@ -1,0 +1,16 @@
+if (CMAKE_C_COMPILER_ID MATCHES "MSVC")
+    message(STATUS "Using MSVC compiler")
+    add_compile_options(/W4)
+elseif (CMAKE_C_COMPILER_ID MATCHES "GNU")
+    message(STATUS "Using GNU compiler")
+    add_compile_options(-Wall -Wextra -Wpedantic)
+elseif (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    message(STATUS "Using Clang compiler")
+    add_compile_options(-Wall -Wextra -Wpedantic)
+else()
+    message(STATUS "Unknown compiler ('${CMAKE_C_COMPILER_ID}') - No compiler option is set")
+endif()
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/out/${CMAKE_BUILD_TYPE}")
+
+enable_testing()
