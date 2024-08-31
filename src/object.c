@@ -74,6 +74,14 @@ bool obj_list_is_valid_index(ObjList* list, int index)
     return (index >= 0 && index < list->count);
 }
 
+ObjClass* obj_class_new(ObjString* name)
+{
+    ObjClass* cls = obj_mem_alloc(ObjClass, OBJ_CLASS);
+    cls->name = name;
+
+    return cls;
+}
+
 ObjFunction* obj_function_new()
 {
     ObjFunction* function = obj_mem_alloc(ObjFunction, OBJ_FUNCTION);
@@ -201,6 +209,10 @@ void obj_print(Value value)
 {
     switch (obj_get_type(value))
     {
+        case OBJ_CLASS:
+            printf("%s", obj_as_class(value)->name->chars);
+            break;
+
         case OBJ_CLOSURE:
             function_print(obj_as_closure(value)->function);
             break;

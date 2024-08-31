@@ -80,6 +80,13 @@ static void gc_blacken_obj(Obj* object)
 
     switch (object->type)
     {
+        case OBJ_CLASS:
+        {
+            ObjClass* cls = (ObjClass*)object;
+            gc_mark_obj((Obj*)cls->name);
+            break;
+        }
+
         case OBJ_CLOSURE:
         {
             ObjClosure* closure = (ObjClosure*)object;
@@ -124,6 +131,12 @@ static void object_free(Obj* object)
 
     switch (object->type)
     {
+        case OBJ_CLASS:
+        {
+            mem_free(ObjClass, object);
+            break;
+        }
+
         case OBJ_CLOSURE:
         {
             ObjClosure* closure = (ObjClosure*)object;
