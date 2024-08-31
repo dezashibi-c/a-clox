@@ -188,6 +188,13 @@ static bool value_call(Value callee, int argc)
     {
         switch (obj_get_type(callee))
         {
+            case OBJ_CLASS:
+            {
+                ObjClass* cls = obj_as_class(callee);
+                vm.stack_top[-argc - 1] = value_make_obj(obj_instance_new(cls));
+                return true;
+            }
+
             case OBJ_CLOSURE:
                 return obj_func_call(obj_as_closure(callee), argc);
 

@@ -87,6 +87,14 @@ static void gc_blacken_obj(Obj* object)
             break;
         }
 
+        case OBJ_INSTANCE:
+        {
+            ObjInstance* instance = (ObjInstance*)object;
+            gc_mark_obj((Obj*)instance->cls);
+            gc_mark_table(&instance->fields);
+            break;
+        }
+
         case OBJ_CLOSURE:
         {
             ObjClosure* closure = (ObjClosure*)object;
@@ -134,6 +142,14 @@ static void object_free(Obj* object)
         case OBJ_CLASS:
         {
             mem_free(ObjClass, object);
+            break;
+        }
+
+        case OBJ_INSTANCE:
+        {
+            ObjInstance* instance = (ObjInstance*)object;
+            table_free(&instance->fields);
+            mem_free(ObjInstance, object);
             break;
         }
 

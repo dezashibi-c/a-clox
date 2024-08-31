@@ -3,12 +3,14 @@
 
 #include "chunk.h"
 #include "general.h"
+#include "table.h"
 #include "value.h"
 
 #define obj_get_type(value) (value_as_obj(value)->type)
 
 #define obj_is_list(value) (is_object_of_type(value, OBJ_LIST))
 #define obj_is_class(value) (is_object_of_type(value, OBJ_CLASS))
+#define obj_is_instance(value) (is_object_of_type(value, OBJ_INSTANCE))
 #define obj_is_closure(value) (is_object_of_type(value, OBJ_CLOSURE))
 #define obj_is_function(value) (is_object_of_type(value, OBJ_FUNCTION))
 #define obj_is_native_fn(value) (is_object_of_type(value, OBJ_NATIVE_FN))
@@ -16,6 +18,7 @@
 
 #define obj_as_list(value) ((ObjList*)value_as_obj(value))
 #define obj_as_class(value) ((ObjClass*)value_as_obj(value))
+#define obj_as_instance(value) ((ObjInstance*)value_as_obj(value))
 #define obj_as_closure(value) ((ObjClosure*)value_as_obj(value))
 #define obj_as_function(value) ((ObjFunction*)value_as_obj(value))
 #define obj_as_native_fn(value) (((ObjNativeFn*)value_as_obj(value))->function)
@@ -28,6 +31,7 @@ typedef enum
     OBJ_CLASS,
     OBJ_CLOSURE,
     OBJ_FUNCTION,
+    OBJ_INSTANCE,
     OBJ_NATIVE_FN,
     OBJ_STRING,
     OBJ_UPVALUE,
@@ -95,6 +99,13 @@ typedef struct
     ObjString* name;
 } ObjClass;
 
+typedef struct
+{
+    Obj obj;
+    ObjClass* cls;
+    Table fields;
+} ObjInstance;
+
 ObjList* obj_list_new();
 void obj_list_append(ObjList* list, Value value);
 void obj_list_insert(ObjList* list, int index, Value value);
@@ -103,6 +114,7 @@ void obj_list_delete(ObjList* list, int index);
 bool obj_list_is_valid_index(ObjList* list, int index);
 
 ObjClass* obj_class_new(ObjString* name);
+ObjInstance* obj_instance_new(ObjClass* cls);
 
 ObjFunction* obj_function_new();
 ObjNativeFn* obj_native_fn_new(NativeFn function);

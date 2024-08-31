@@ -82,6 +82,15 @@ ObjClass* obj_class_new(ObjString* name)
     return cls;
 }
 
+ObjInstance* obj_instance_new(ObjClass* cls)
+{
+    ObjInstance* instance = obj_mem_alloc(ObjInstance, OBJ_INSTANCE);
+    instance->cls = cls;
+    table_init(&instance->fields);
+
+    return instance;
+}
+
 ObjFunction* obj_function_new()
 {
     ObjFunction* function = obj_mem_alloc(ObjFunction, OBJ_FUNCTION);
@@ -211,6 +220,10 @@ void obj_print(Value value)
     {
         case OBJ_CLASS:
             printf("%s", obj_as_class(value)->name->chars);
+            break;
+
+        case OBJ_INSTANCE:
+            printf("%s instance", obj_as_instance(value)->cls->name->chars);
             break;
 
         case OBJ_CLOSURE:
