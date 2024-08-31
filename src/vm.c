@@ -539,6 +539,19 @@ static InterpretResult run()
                 break;
             }
 
+            case OP_GET_SUPER:
+            {
+                ObjString* name = byte_read_string();
+                ObjClass* superclass = obj_as_class(vm_stack_pop());
+
+                if (!bind_method(superclass, name))
+                {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                break;
+            }
+
             case OP_EQUAL:
             {
                 Value b = vm_stack_pop();
@@ -653,6 +666,18 @@ static InterpretResult run()
                 int argc = byte_read_raw();
 
                 if (!invoke(method, argc)) return INTERPRET_RUNTIME_ERROR;
+
+                frame = &vm.frames[vm.frame_count - 1];
+                break;
+            }
+
+            case OP_SUPER_INVOKE:
+            {
+                ObjString* method = byte_read_string();
+                int argc = byte_read_raw();
+                ObjClass* superclass = obj_as_class(vm_stack_pop());
+                if (!invoke_from_class(superclass, method, argc))
+                    return INTERPRET_RUNTIME_ERROR;
 
                 frame = &vm.frames[vm.frame_count - 1];
                 break;
@@ -793,6 +818,23 @@ static InterpretResult run()
                 vm_stack_push(
                     value_make_obj(obj_class_new(byte_read_string())));
                 break;
+
+            case OP_INHERIT:
+            {
+                Value superclass = vm_stack_peek(1);
+
+                if (!obj_is_class(superclass))
+                {
+                    raise_runtime_error("Superclass must be a class.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjClass* subclass = obj_as_class(vm_stack_peek(0));
+                table_append(&obj_as_class(superclass)->methods,
+                             &subclass->methods);
+                vm_stack_pop(); // Subclass.
+                break;
+            }
 
             case OP_METHOD:
                 define_method(byte_read_string());

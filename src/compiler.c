@@ -80,6 +80,7 @@ typedef struct Compiler
 typedef struct ClassCompiler
 {
     struct ClassCompiler* enclosing;
+    bool has_super_class;
 } ClassCompiler;
 
 Parser parser;
@@ -137,11 +138,13 @@ static void parse_literal(bool can_assign);
 static void parse_call(bool can_assign);
 static void parse_dot(bool can_assign);
 static void parse_this(bool can_assign);
+static void parse_super(bool can_assign);
 static void parse_list(bool can_assign);
 static void parse_subscript(bool can_assign);
 
 static void parse_expression();
 
+static Token token_make_synthetic(const char* text);
 static uint8_t parse_variable(const char* error_message);
 static uint8_t parse_argument_list();
 static void parse_fun_declaration();
@@ -201,7 +204,7 @@ ParseRule rules[] = {
     [TOKEN_OR] = {NULL, parse_or, PREC_OR},
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
-    [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
+    [TOKEN_SUPER] = {parse_super, NULL, PREC_NONE},
     [TOKEN_THIS] = {parse_this, NULL, PREC_NONE},
     [TOKEN_TRUE] = {parse_literal, NULL, PREC_NONE},
     [TOKEN_VAR] = {NULL, NULL, PREC_NONE},
@@ -820,6 +823,39 @@ static void parse_this(bool can_assign)
     byte_emit_variable(false);
 }
 
+static void parse_super(bool can_assign)
+{
+    (void)can_assign;
+
+    if (current_class == NULL)
+    {
+        raise_error("Can't use 'super' outside of a class.");
+    }
+    else if (!current_class->has_super_class)
+    {
+        raise_error("Can't use 'super' in a class with no superclass.");
+    }
+
+    expect_token_or_fail(TOKEN_DOT, "Expect '.' after 'super'.");
+    expect_token_or_fail(TOKEN_IDENTIFIER, "Expect superclass method name.");
+    uint8_t name = constant_identifier(&parser.previous);
+
+    byte_emit_named_variable(token_make_synthetic("this"), false);
+
+    if (expect_token(TOKEN_LEFT_PAREN))
+    {
+        uint8_t argc = parse_argument_list();
+        byte_emit_named_variable(token_make_synthetic("super"), false);
+        byte_emit_duo(OP_SUPER_INVOKE, name);
+        byte_emit(argc);
+    }
+    else
+    {
+        byte_emit_named_variable(token_make_synthetic("super"), false);
+        byte_emit_duo(OP_GET_SUPER, name);
+    }
+}
+
 static void parse_list(bool can_assign)
 {
     (void)can_assign;
@@ -865,6 +901,15 @@ static void parse_subscript(bool can_assign)
 static void parse_expression()
 {
     parse_precedence(PREC_ASSIGNMENT);
+}
+
+static Token token_make_synthetic(const char* text)
+{
+    Token token;
+    token.start = text;
+    token.length = (int)strlen(text);
+
+    return token;
 }
 
 static uint8_t parse_variable(const char* error_message)
@@ -937,8 +982,28 @@ static void parse_class_declaration()
     byte_emit_var_def(name_constant);
 
     ClassCompiler class_compiler;
+    class_compiler.has_super_class = false;
     class_compiler.enclosing = current_class;
     current_class = &class_compiler;
+
+    if (expect_token(TOKEN_LESS))
+    {
+        expect_token_or_fail(TOKEN_IDENTIFIER, "Expect superclass name.");
+        byte_emit_variable(false);
+
+        if (token_identifiers_equal(&class_name, &parser.previous))
+        {
+            raise_error("A class can't inherit from itself.");
+        }
+
+        byte_emit_named_variable(class_name, false);
+        byte_emit(OP_INHERIT);
+        class_compiler.has_super_class = true;
+    }
+
+    compiler_scope_begin();
+    compiler_local_add(token_make_synthetic("super"));
+    byte_emit_var_def(0);
 
     byte_emit_named_variable(class_name, false);
     expect_token_or_fail(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
@@ -948,6 +1013,11 @@ static void parse_class_declaration()
 
     expect_token_or_fail(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
     byte_emit(OP_POP);
+
+    if (class_compiler.has_super_class)
+    {
+        compiler_scope_end();
+    }
 
     current_class = current_class->enclosing;
 }
