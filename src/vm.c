@@ -814,8 +814,7 @@ static InterpretResult run()
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                obj_list_insert(obj_as_list(list), value_as_number(index),
-                                item);
+                obj_list_set(obj_as_list(list), value_as_number(index), item);
                 vm_stack_push(item);
                 break;
             }

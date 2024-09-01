@@ -119,7 +119,7 @@ typedef struct
 
 ObjList* obj_list_new();
 void obj_list_append(ObjList* list, Value value);
-void obj_list_insert(ObjList* list, int index, Value value);
+void obj_list_set(ObjList* list, int index, Value value);
 Value obj_list_get(ObjList* list, int index);
 void obj_list_delete(ObjList* list, int index);
 bool obj_list_is_valid_index(ObjList* list, int index);

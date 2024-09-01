@@ -50,7 +50,7 @@ void obj_list_append(ObjList* list, Value value)
     list->count++;
 }
 
-void obj_list_insert(ObjList* list, int index, Value value)
+void obj_list_set(ObjList* list, int index, Value value)
 {
     list->items[index] = value;
 }
