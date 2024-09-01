@@ -1,15 +1,16 @@
 class Doughnut {
   cook() {
-    print "Dunk in the fryer.";
+    println "Dunk in the fryer.";
   }
 }
 
 class Cruller < Doughnut {
   finish() {
-    print "Glaze with icing.";
+    println "Glaze with icing.";
   }
 }
 
 var c = Cruller();
 
+c.cook();
 c.finish();

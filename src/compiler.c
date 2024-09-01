@@ -156,7 +156,7 @@ static void parse_declaration();
 static void parse_and(bool can_assign);
 static void parse_or(bool can_assign);
 
-static void parse_print_statement();
+static void parse_print_statement(bool new_line);
 static void parse_if_statement();
 static void parse_return_statement();
 static void parse_while_statement();
@@ -1091,12 +1091,12 @@ static void parse_or(bool can_assign)
     byte_emit_patch_jump(end_jump);
 }
 
-static void parse_print_statement()
+static void parse_print_statement(bool new_line)
 {
     parse_expression();
     expect_token_or_fail(TOKEN_SEMICOLON, "Expect ';' after value.");
 
-    byte_emit(OP_PRINT);
+    byte_emit(new_line ? OP_PRINTLN : OP_PRINT);
 }
 
 static void parse_if_statement()
@@ -1283,9 +1283,13 @@ static void parse_function(CodePlacement code_placement)
 
 static void parse_statement()
 {
-    if (expect_token(TOKEN_PRINT))
+    if (expect_token(TOKEN_PRINTLN))
     {
-        parse_print_statement();
+        parse_print_statement(true);
+    }
+    else if (expect_token(TOKEN_PRINT))
+    {
+        parse_print_statement(false);
     }
     else if (expect_token(TOKEN_FOR))
     {

@@ -5,9 +5,13 @@
     },
     "cSpell.words": [
         "CLOX",
+        "eturn",
         "GETIDX",
+        "hile",
+        "rintln",
         "SETIDX",
         "sweeped",
+        "uper",
         "UPVALUE",
         "upvalues"
     ]

@@ -168,7 +168,13 @@ static TokenType get_identifier_type()
             return if_can_get_keyword(1, 1, "r", TOKEN_OR);
 
         case 'p':
-            return if_can_get_keyword(1, 4, "rint", TOKEN_PRINT);
+        {
+            TokenType t = if_can_get_keyword(1, 6, "rintln", TOKEN_PRINTLN);
+
+            return t != TOKEN_IDENTIFIER
+                       ? t
+                       : if_can_get_keyword(1, 4, "rint", TOKEN_PRINT);
+        }
 
         case 'r':
             return if_can_get_keyword(1, 5, "eturn", TOKEN_RETURN);

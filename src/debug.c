@@ -149,6 +149,9 @@ int instruction_disassemble(Chunk* chunk, int offset)
         case OP_PRINT:
             return instruction_simple("OP_PRINT", offset);
 
+        case OP_PRINTLN:
+            return instruction_simple("OP_PRINTLN", offset);
+
         case OP_JUMP:
             return instruction_jump("OP_JUMP", 1, chunk, offset);
 

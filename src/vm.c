@@ -63,6 +63,24 @@ static Value native_fn_clock(int argc, Value* args)
     return value_make_number((double)clock() / CLOCKS_PER_SEC);
 }
 
+static Value native_fn_list_length(int argc, Value* args)
+{
+    if (argc != 1)
+    {
+        raise_runtime_error("insufficient arguments, need 1 got=%d", argc);
+        return value_make_nil();
+    }
+
+    if (!obj_is_list(args[0]))
+    {
+        raise_runtime_error("cannot get length of a non-list variable.");
+        return value_make_nil();
+    }
+
+    ObjList* list = obj_as_list(args[0]);
+    return value_make_number(list->count);
+}
+
 static Value native_fn_list_append(int argc, Value* args)
 {
     if (argc != 2)
@@ -134,6 +152,7 @@ void vm_init()
     vm.init_str = obj_string_cpy("init", 4);
 
     vm_define_native_fn("clock", native_fn_clock);
+    vm_define_native_fn("length", native_fn_list_length);
     vm_define_native_fn("append", native_fn_list_append);
     vm_define_native_fn("delete", native_fn_list_delete);
 }
@@ -623,6 +642,10 @@ static InterpretResult run()
                 break;
 
             case OP_PRINT:
+                value_print(vm_stack_pop());
+                break;
+
+            case OP_PRINTLN:
                 value_print(vm_stack_pop());
                 puts("");
                 break;

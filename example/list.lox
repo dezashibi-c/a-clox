@@ -1,0 +1,7 @@
+var l = [1, 2, 3, "hello", "world"];
+
+print "length: ";
+println length(l);
+println "------";
+
+for (var i = 0; i < length(l); i = i + 1) println l[i];
