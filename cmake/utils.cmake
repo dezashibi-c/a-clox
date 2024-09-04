@@ -34,12 +34,24 @@ function(define_post_built_copy TARGET_NAME DESTINATION)
     set(FILES_TO_COPY ${ARGN})
     set(DESTINATION_DIR "${CMAKE_SOURCE_DIR}/out/${CMAKE_BUILD_TYPE}/${DESTINATION}")
 
-    add_custom_target(${TARGET_NAME}_copy_files ALL
+    if(NOT DESTINATION STREQUAL "")
+        set(COPY_TARGET_NAME ${DESTINATION}_${TARGET_NAME}_copy_files)
+    else()
+        set(COPY_TARGET_NAME ${TARGET_NAME}_copy_files)
+    endif()
+
+    add_custom_target(${COPY_TARGET_NAME} ALL
         COMMAND ${CMAKE_COMMAND} -E echo "Copying files..."
     )
 
     foreach(FILE IN LISTS FILES_TO_COPY)
         get_filename_component(FILE_NAME ${FILE} NAME)
+
+        if(NOT DESTINATION STREQUAL "")
+            set(COPY_FILE_TARGET_NAME ${TARGET_NAME}_${DESTINATION}_copy_${FILE_NAME})
+        else()
+            set(COPY_FILE_TARGET_NAME ${TARGET_NAME}_copy_${FILE_NAME})
+        endif()
 
         add_custom_command(
             OUTPUT "${DESTINATION_DIR}/${FILE_NAME}"
@@ -48,9 +60,9 @@ function(define_post_built_copy TARGET_NAME DESTINATION)
             COMMENT "Copying ${FILE} to ${DESTINATION_DIR}"
         )
 
-        add_custom_target(${TARGET_NAME}_copy_${FILE_NAME} DEPENDS "${DESTINATION_DIR}/${FILE_NAME}")
-        add_dependencies(${TARGET_NAME}_copy_files ${TARGET_NAME}_copy_${FILE_NAME})
+        add_custom_target(${COPY_FILE_TARGET_NAME} DEPENDS "${DESTINATION_DIR}/${FILE_NAME}")
+        add_dependencies(${COPY_TARGET_NAME} ${COPY_FILE_TARGET_NAME})
     endforeach()
 
-    add_dependencies(${TARGET_NAME} ${TARGET_NAME}_copy_files)
+    add_dependencies(${TARGET_NAME} ${COPY_TARGET_NAME})
 endfunction()
