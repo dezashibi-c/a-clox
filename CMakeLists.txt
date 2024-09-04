@@ -40,3 +40,14 @@ define_macro_option(clox DEBUG_LOG_GC OFF)
 ###############################################################################
 
 # enable_pre_build_testing(main_exe_file all_tests)
+
+###############################################################################
+# POST BUILD FILE COPIES
+###############################################################################
+set(FILES_TO_COPY
+    "${CMAKE_SOURCE_DIR}/example/benchmark.lox"
+    "${CMAKE_SOURCE_DIR}/example/class.lox"
+    "${CMAKE_SOURCE_DIR}/example/list.lox"
+)
+
+define_post_built_copy(clox "examples" ${FILES_TO_COPY})

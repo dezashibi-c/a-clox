@@ -29,3 +29,28 @@ function(define_macro_option TARGET_NAME MACRO_NAME DEFAULT_VALUE)
         target_compile_definitions(${TARGET_NAME} PRIVATE ${MACRO_NAME})
     endif()
 endfunction()
+
+function(define_post_built_copy TARGET_NAME DESTINATION)
+    set(FILES_TO_COPY ${ARGN})
+    set(DESTINATION_DIR "${CMAKE_SOURCE_DIR}/out/${CMAKE_BUILD_TYPE}/${DESTINATION}")
+
+    add_custom_target(${TARGET_NAME}_copy_files ALL
+        COMMAND ${CMAKE_COMMAND} -E echo "Copying files..."
+    )
+
+    foreach(FILE IN LISTS FILES_TO_COPY)
+        get_filename_component(FILE_NAME ${FILE} NAME)
+
+        add_custom_command(
+            OUTPUT "${DESTINATION_DIR}/${FILE_NAME}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${FILE}" "${DESTINATION_DIR}/${FILE_NAME}"
+            DEPENDS "${FILE}"
+            COMMENT "Copying ${FILE} to ${DESTINATION_DIR}"
+        )
+
+        add_custom_target(${TARGET_NAME}_copy_${FILE_NAME} DEPENDS "${DESTINATION_DIR}/${FILE_NAME}")
+        add_dependencies(${TARGET_NAME}_copy_files ${TARGET_NAME}_copy_${FILE_NAME})
+    endforeach()
+
+    add_dependencies(${TARGET_NAME} ${TARGET_NAME}_copy_files)
+endfunction()
