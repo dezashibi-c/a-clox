@@ -1,4 +1,6 @@
-function(add_clove_test TEST_NAME GROUP DEPS)
+function(add_clove_test TEST_NAME GROUP)
+    set(DEPS ${ARGN})
+
     add_executable(${TEST_NAME} tests.c ${TEST_NAME}.c ${DEPS})
 
     target_include_directories(${TEST_NAME} PRIVATE ../extern/clove-unit)
